@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Mental – Diccionario EDT</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#eef0f4;
+  --c1:#f97316;--c2:#8b5cf6;--c3:#0ea5e9;--c4:#10b981;--c5:#ef4444;
+  --l1:#fff4ed;--l2:#f5f3ff;--l3:#e0f2fe;--l4:#f0fdf4;--l5:#fff1f2;
+  --center:#1e1b4b;--white:#fff;
+  --shadow:0 3px 16px rgba(0,0,0,.12);--shadow-sm:0 2px 8px rgba(0,0,0,.08);
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:var(--bg)}
+
+/* ── TOPBAR ── */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:200;height:58px;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(16px);
+  border-bottom:1px solid #e5e7eb;
+  display:flex;align-items:center;padding:0 20px;gap:0;
+}
+.tb-left{display:flex;align-items:center;gap:10px;flex:0 0 auto;min-width:260px}
+.tb-logo{width:34px;height:34px;border-radius:10px;background:var(--c1);display:grid;place-items:center;font-family:'Sora',sans-serif;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.tb-author{font-family:'Sora',sans-serif;font-size:13px;font-weight:800;color:#1a1a2e;line-height:1.2}
+.tb-name{font-size:10.5px;font-weight:600;color:#374151;line-height:1.2}
+.tb-sub{font-size:8.5px;color:#9ca3af;font-weight:500;letter-spacing:.2px}
+
+.tb-center{flex:1;display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap}
+.pill{padding:4px 12px;border-radius:20px;border:1.5px solid;font-size:10.5px;font-weight:600;cursor:pointer;background:var(--white);display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
+.pill:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+.tb-right{flex:0 0 auto;min-width:260px}
+
+/* ── STAGE ── */
+#stage{position:fixed;top:58px;left:0;right:0;bottom:34px;overflow:hidden;cursor:grab;touch-action:none}
+#stage.grabbing{cursor:grabbing}
+#svg-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+
+/* ── NODES ── */
+.node{position:absolute;user-select:none;cursor:grab;transition:opacity .22s,box-shadow .18s}
+.node:active{cursor:grabbing}
+
+.n-center{width:150px;background:var(--center);border-radius:18px;padding:16px 14px;text-align:center;box-shadow:var(--shadow)}
+.nc-icon{font-size:22px;margin-bottom:6px}
+.nc-title{font-family:'Sora',sans-serif;font-size:12px;font-weight:800;color:#fff;line-height:1.25}
+.nc-sub{font-size:9px;color:#a5b4fc;margin-top:4px}
+
+.n-phase{border-radius:13px;padding:11px 16px;width:160px;box-shadow:var(--shadow);cursor:pointer}
+.np-code{font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.8;margin-bottom:3px;color:#fff}
+.np-title{font-family:'Sora',sans-serif;font-size:12px;font-weight:700;color:#fff;line-height:1.3}
+.n-phase.selected{outline:3px solid #fff;outline-offset:2px;box-shadow:0 0 0 5px rgba(255,255,255,.3),var(--shadow)}
+
+.n-sub{background:var(--white);border-radius:9px;padding:8px 12px;width:158px;border-left:3px solid transparent;box-shadow:var(--shadow-sm)}
+.ns-code{font-size:8px;font-weight:700;letter-spacing:.8px;margin-bottom:2px}
+.ns-title{font-size:10.5px;font-weight:600;color:#1a1a2e;line-height:1.3}
+
+.n-leaf{background:var(--white);border-radius:7px;padding:7px 10px;width:148px;border-left:2px solid transparent;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.n-leaf.deliverable{background:#fffbeb}
+.nl-code{font-size:7.5px;font-weight:700;letter-spacing:.7px;margin-bottom:2px}
+.nl-title{font-size:10px;color:#4b5563;font-weight:500;line-height:1.3}
+.n-leaf.deliverable .nl-title{color:#92400e}
+
+.node.dim{opacity:.08;pointer-events:none}
+
+#tip{position:fixed;z-index:500;background:rgba(15,15,30,.93);color:#fff;border-radius:9px;padding:9px 13px;font-size:11px;line-height:1.5;max-width:240px;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 6px 24px rgba(0,0,0,.22)}
+#tip.show{opacity:1}
+#tip-code{font-size:8.5px;font-weight:700;letter-spacing:1px;color:#a5b4fc;margin-bottom:3px}
+
+#footer{position:fixed;bottom:0;left:0;right:0;height:34px;z-index:200;background:rgba(255,255,255,.93);backdrop-filter:blur(10px);border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;gap:18px;font-size:10px;color:#6b7280;font-weight:500}
+.fi{display:flex;align-items:center;gap:5px}
+.fd{width:8px;height:8px;border-radius:50%}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="tb-left">
+    <div class="tb-logo">EDT</div>
+    <div>
+      <div class="tb-author">Eder L. Cosme</div>
+      <div class="tb-name">Diccionario EDT</div>
+      <div class="tb-sub">UNIVERSIDAD NACIONAL ABIERTA Y A DISTANCIA</div>
+    </div>
+  </div>
+  <div class="tb-center" id="pills"></div>
+  <div class="tb-right"></div>
+</div>
+
+<div id="stage"><svg id="svg-layer" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<div id="tip"><div id="tip-code"></div><div id="tip-body"></div></div>
+
+<div id="footer">
+  <div class="fi"><div class="fd" style="background:#f97316"></div>1.0 Gestión</div>
+  <div class="fi"><div class="fd" style="background:#8b5cf6"></div>2.0 Diagnóstico</div>
+  <div class="fi"><div class="fd" style="background:#0ea5e9"></div>3.0 KPIs</div>
+  <div class="fi"><div class="fd" style="background:#10b981"></div>4.0 Prototipo</div>
+  <div class="fi"><div class="fd" style="background:#ef4444"></div>5.0 Validación</div>
+  <div style="color:#d1d5db">·</div>
+  <div class="fi"><div class="fd" style="background:#f97316;border-radius:2px"></div>⭐ Entregable</div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════ */
+const COLORS=['#f97316','#8b5cf6','#0ea5e9','#10b981','#ef4444'];
+const LIGHTS=['#fff4ed','#f5f3ff','#e0f2fe','#f0fdf4','#fff1f2'];
+const NAMES=['Gestión','Diagnóstico','KPIs','Prototipo','Validación'];
+
+const DATA=[
+  { code:'1.0', title:'Gestión\ndel Proyecto',
+    subs:[
+      { code:'1.1', title:'Planificación\ndel Proyecto',
+        leaves:[
+          {code:'1.1.1',title:'Definición\ndel Alcance',desc:'Marco, límites del proyecto, interesados y acuerdos de entrega.'},
+          {code:'1.1.2',title:'Cronograma y\nGestión de Riesgos',desc:'Línea base de tiempo, registro de riesgos y planes de contingencia.'},
+        ]},
+      { code:'1.2', title:'Seguimiento\ny Control',
+        leaves:[
+          {code:'1.2.1',title:'Control de Avance\ny Comunicación',desc:'Monitoreo periódico del progreso e informes a partes interesadas.'},
+        ]},
+    ]},
+  { code:'2.0', title:'Diagnóstico\nInstitucional',
+    subs:[
+      { code:'2.1', title:'Análisis\nDocumental',
+        leaves:[
+          {code:'2.1.1',title:'Revisión\nNormativa CNA',desc:'Resoluciones, lineamientos y estándares del Consejo Nacional de Acreditación.'},
+          {code:'2.1.2',title:'Revisión Informes\nAutoevaluación IES',desc:'Sistematización de informes previos de autoevaluación institucional.'},
+        ]},
+      { code:'2.2', title:'Trabajo de Campo\ncon IES',
+        leaves:[
+          {code:'2.2.1',title:'Selección, Contacto\ny Consentimiento',desc:'Identificación de IES y gestión de consentimientos informados.'},
+          {code:'2.2.2',title:'Entrevistas\nSemiestructuradas',desc:'Instrumentos cualitativos para identificar brechas y necesidades.'},
+        ]},
+      { code:'2.3', title:'⭐ Matriz\nDiagnóstica', deliverable:true,
+        leaves:[
+          {code:'2.3.1',title:'Elaboración\nMatriz Diagnóstica',desc:'Consolidación de hallazgos documentales y de campo.',deliverable:true},
+        ]},
+    ]},
+  { code:'3.0', title:'Catálogo\nde KPIs',
+    subs:[
+      { code:'3.1', title:'Catálogo\nPreliminar',
+        leaves:[
+          {code:'3.1.1',title:'Inventario y Ficha\nTécnica Indicadores',desc:'KPIs potenciales con fórmulas, fuentes y periodicidad.'},
+          {code:'3.1.2',title:'Instrumentos\nPanel Delphi',desc:'Rondas de consulta, escalas de valoración y criterios de consenso.'},
+        ]},
+      { code:'3.2', title:'Panel Delphi\nValidación KPIs',
+        leaves:[
+          {code:'3.2.1',title:'Convocatoria\nPanel de Expertos',desc:'Selección e invitación de expertos en acreditación y BI.'},
+          {code:'3.2.2',title:'Rondas Delphi\ny Cálculo CVI',desc:'Rondas iterativas e Índice de Validez de Contenido.'},
+        ]},
+      { code:'3.3', title:'⭐ Catálogo\nValidado KPIs', deliverable:true,
+        leaves:[
+          {code:'3.3.1',title:'Documentación\ny Revisión Final',desc:'Catálogo definitivo con fichas técnicas y reporte de consenso.',deliverable:true},
+        ]},
+    ]},
+  { code:'4.0', title:'Prototipo\nQlik Sense',
+    subs:[
+      { code:'4.1', title:'Arquitectura ETL\ny Data Mart',
+        leaves:[
+          {code:'4.1.1',title:'Modelo de Datos\nEducativo',desc:'Esquema dimensional con tablas de hechos y dimensiones.'},
+          {code:'4.1.2',title:'Proceso ETL\nSprint 1 (Sem.11–12)',desc:'Extracción, transformación y carga al Data Mart.'},
+        ]},
+      { code:'4.2', title:'Dashboards\nQlik Sense',
+        leaves:[
+          {code:'4.2.1',title:'Dashboards\nSprints 2–3 (Sem.13–16)',desc:'Paneles visuales interactivos con KPIs validados.'},
+          {code:'4.2.2',title:'Control de Calidad\ndel Prototipo',desc:'Verificación funcional, integridad de datos y UX.'},
+        ]},
+      { code:'4.3', title:'⭐ Prototipo\nFuncional BI', deliverable:true,
+        leaves:[
+          {code:'4.3.1',title:'Documentación\ny Despliegue',desc:'Manual técnico, guía de usuario y despliegue controlado.',deliverable:true},
+        ]},
+    ]},
+  { code:'5.0', title:'Validación\ndel Prototipo',
+    subs:[
+      { code:'5.1', title:'Sesión Piloto\ncon Usuarios',
+        leaves:[
+          {code:'5.1.1',title:'Preparación\nSesión Validación',desc:'Protocolo de prueba, selección de usuarios y entorno.'},
+          {code:'5.1.2',title:'Protocolo SUS',desc:'System Usability Scale aplicado en sesiones controladas.'},
+        ]},
+      { code:'5.2', title:'Análisis y Ajustes\nPost-Validación',
+        leaves:[
+          {code:'5.2.1',title:'Análisis Cuantitativo\nde Usabilidad',desc:'Resultados SUS, tiempos de tarea y tasas de error.'},
+          {code:'5.2.2',title:'Ajustes Sprint 4\n(Sem.19–20)',desc:'Mejoras priorizadas de usabilidad para la versión final.'},
+        ]},
+      { code:'5.3', title:'⭐ Informe\nFinal Validación', deliverable:true,
+        leaves:[
+          {code:'5.3.1',title:'Informe Validación\ny Cierre Proyecto',desc:'Hallazgos, conclusiones, lecciones aprendidas y cierre formal.',deliverable:true},
+        ]},
+    ]},
+];
+
+/* ═══════════════════════════════════════════════════
+   LAYOUT — fixed grid positions, NO overlap
+   
+   Strategy: divide 360° into 5 equal sectors (72° each).
+   Each phase sits at the sector midpoint.
+   Subs fan inside the sector, leaves fan beyond subs.
+   All distances generous enough that fixed-width nodes don't touch.
+═══════════════════════════════════════════════════ */
+
+// Node widths (px in world space, matching CSS width)
+const NW = { center:150, phase:160, sub:158, leaf:148 };
+// Distances from center
+const D_PHASE  = 320;   // center → phase
+const D_SUB    = 230;   // phase  → sub
+const D_LEAF   = 210;   // sub    → leaf
+
+function deg(d){ return d * Math.PI / 180; }
+function polar(cx, cy, angleDeg, r){
+  return { x: cx + r * Math.cos(deg(angleDeg)), y: cy + r * Math.sin(deg(angleDeg)) };
+}
+
+// Sector angles: spread 5 phases evenly, starting from "left" side
+// We place: Gestión=210°, Diagnóstico=150°, KPIs=90°, Prototipo=30°, Validación=-30° (330°)
+const PHASE_ANGLES = [210, 150, 90, 30, 330];
+
+// For a given phase angle and number of subs, compute sub angles
+// that stay within a ±sector_half cone and don't crowd each other
+function subAngles(phaseAngle, nSubs) {
+  // angular gap between subs – must be wide enough so sub nodes don't overlap
+  // sub node width ~158px, at distance D_SUB from phase (D_PHASE+D_SUB from center)
+  // arc length needed = 158+20px gap => angle = atan2(178, D_PHASE+D_SUB)
+  const minGap = Math.atan2(185, D_PHASE + D_SUB) * 180 / Math.PI;
+  const gap = Math.max(minGap, 28); // at least 28°
+  const totalSpread = (nSubs - 1) * gap;
+  return Array.from({length: nSubs}, (_, i) => phaseAngle - totalSpread/2 + i * gap);
+}
+
+// For a given sub angle and number of leaves
+function leafAngles(subAngle, nLeaves) {
+  const minGap = Math.atan2(158, D_PHASE + D_SUB + D_LEAF) * 180 / Math.PI;
+  const gap = Math.max(minGap, 24);
+  const totalSpread = (nLeaves - 1) * gap;
+  return Array.from({length: nLeaves}, (_, i) => subAngle - totalSpread/2 + i * gap);
+}
+
+// World center — we'll compute this after knowing screen size
+const stage = document.getElementById('stage');
+const SW = stage.clientWidth  || window.innerWidth;
+const SH = stage.clientHeight || (window.innerHeight - 92);
+const WCX = SW / 2, WCY = SH / 2;
+
+const pos = {};           // code → {x,y}  (world = screen initially, vpS=1)
+const phaseChildren = {}; // phaseCode → [all descendant codes]
+
+function initPositions() {
+  pos['center'] = { x: WCX, y: WCY };
+
+  DATA.forEach((ph, pi) => {
+    const phAngle = PHASE_ANGLES[pi];
+    const pp = polar(WCX, WCY, phAngle, D_PHASE);
+    pos[ph.code] = { x: pp.x, y: pp.y };
+    phaseChildren[ph.code] = [];
+
+    const sAngles = subAngles(phAngle, ph.subs.length);
+
+    ph.subs.forEach((sub, si) => {
+      const sAngle = sAngles[si];
+      const sp = polar(pp.x, pp.y, sAngle, D_SUB);
+      pos[sub.code] = { x: sp.x, y: sp.y };
+      phaseChildren[ph.code].push(sub.code);
+
+      const lAngles = leafAngles(sAngle, sub.leaves.length);
+      sub.leaves.forEach((lf, li) => {
+        const lp = polar(sp.x, sp.y, lAngles[li], D_LEAF);
+        pos[lf.code] = { x: lp.x, y: lp.y };
+        phaseChildren[ph.code].push(lf.code);
+      });
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   VIEWPORT (pan/zoom without CSS scale)
+═══════════════════════════════════════════════════ */
+let vpX = 0, vpY = 0, vpS = 1;
+function toScreen(wx, wy){ return { sx: wx*vpS + vpX, sy: wy*vpS + vpY }; }
+
+/* ═══════════════════════════════════════════════════
+   DOM + SVG
+═══════════════════════════════════════════════════ */
+const svgEl = document.getElementById('svg-layer');
+const tip    = document.getElementById('tip');
+const tipCode= document.getElementById('tip-code');
+const tipBody= document.getElementById('tip-body');
+const nodeEls= {};
+const pathEls= [];
+
+function makeNode(code, cls, html, zIdx) {
+  const el = document.createElement('div');
+  el.className = 'node ' + cls;
+  el.style.zIndex = zIdx;
+  el.innerHTML = html;
+  stage.appendChild(el);
+  nodeEls[code] = el;
+  return el;
+}
+
+function makePath(from, to, color, w, dash, op) {
+  const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('fill','none');
+  p.setAttribute('stroke', color);
+  p.setAttribute('stroke-width', w);
+  p.setAttribute('stroke-linecap','round');
+  if (dash) p.setAttribute('stroke-dasharray', dash);
+  p.setAttribute('opacity', op || .48);
+  svgEl.appendChild(p);
+  pathEls.push({ el:p, from, to, baseOp: op || .48 });
+}
+
+function buildDOM() {
+  // Center
+  makeNode('center','n-center',`
+    <div class="nc-icon">🗂️</div>
+    <div class="nc-title">Diccionario<br>EDT</div>
+    <div class="nc-sub">Estructura de Desglose<br>del Trabajo</div>
+  `, 30);
+
+  DATA.forEach((ph, pi) => {
+    const color = COLORS[pi], light = LIGHTS[pi];
+    makePath('center', ph.code, color, 2.5, '', .52);
+
+    const pEl = makeNode(ph.code, 'n-phase', `
+      <div class="np-code">${ph.code}</div>
+      <div class="np-title">${ph.title.replace(/\n/g,'<br>')}</div>
+    `, 20);
+    pEl.style.background = color;
+
+    ph.subs.forEach(sub => {
+      makePath(ph.code, sub.code, color, 1.9, '6,4', .45);
+      const sEl = makeNode(sub.code, 'n-sub', `
+        <div class="ns-code" style="color:${color}">${sub.code}</div>
+        <div class="ns-title">${sub.title.replace(/\n/g,'<br>')}</div>
+      `, 12);
+      sEl.style.borderLeftColor = color;
+      if (sub.deliverable) sEl.style.background = light;
+
+      sub.leaves.forEach(lf => {
+        makePath(sub.code, lf.code, color, 1.3, '3,4', .4);
+        const cls = 'n-leaf' + (lf.deliverable ? ' deliverable' : '');
+        const lEl = makeNode(lf.code, cls, `
+          <div class="nl-code" style="color:${color}">${lf.code}</div>
+          <div class="nl-title">${lf.title.replace(/\n/g,'<br>')}</div>
+        `, 8);
+        lEl.style.borderLeftColor = color;
+        lEl.addEventListener('mouseenter', e => {
+          tipCode.textContent = lf.code; tipBody.textContent = lf.desc;
+          tip.classList.add('show'); moveTip(e);
+        });
+        lEl.addEventListener('mousemove', moveTip);
+        lEl.addEventListener('mouseleave', () => tip.classList.remove('show'));
+      });
+    });
+  });
+}
+
+function moveTip(e){
+  let x=e.clientX+14, y=e.clientY-8;
+  if(x+250>window.innerWidth) x=e.clientX-260;
+  tip.style.left=x+'px'; tip.style.top=y+'px';
+}
+
+/* ═══════════════════════════════════════════════════
+   RENDER — nodes positioned in screen coords → crisp at any zoom
+═══════════════════════════════════════════════════ */
+function render() {
+  Object.keys(nodeEls).forEach(code => {
+    const {sx,sy} = toScreen(pos[code].x, pos[code].y);
+    const el = nodeEls[code];
+    el.style.left = sx + 'px';
+    el.style.top  = sy + 'px';
+    el.style.transform = 'translate(-50%,-50%)';
+  });
+  pathEls.forEach(pe => {
+    const a = toScreen(pos[pe.from].x, pos[pe.from].y);
+    const b = toScreen(pos[pe.to].x,   pos[pe.to].y);
+    const mx = (a.sx + b.sx) / 2;
+    pe.el.setAttribute('d', `M${a.sx},${a.sy} C${mx},${a.sy} ${mx},${b.sy} ${b.sx},${b.sy}`);
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   FILTER
+═══════════════════════════════════════════════════ */
+let activePhase = null;
+
+function applyFilter(phIdx) {
+  if (phIdx === null) {
+    Object.values(nodeEls).forEach(el => el.classList.remove('dim','selected'));
+    pathEls.forEach(pe => pe.el.style.opacity = pe.baseOp);
+    return;
+  }
+  const keep = new Set(['center', DATA[phIdx].code, ...phaseChildren[DATA[phIdx].code]]);
+  Object.keys(nodeEls).forEach(c => {
+    nodeEls[c].classList.toggle('dim', !keep.has(c));
+    nodeEls[c].classList.toggle('selected', c === DATA[phIdx].code);
+  });
+  pathEls.forEach(pe => {
+    pe.el.style.opacity = (keep.has(pe.from) && keep.has(pe.to)) ? .75 : .04;
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   PILLS
+═══════════════════════════════════════════════════ */
+const pillsEl = document.getElementById('pills');
+COLORS.forEach((color, i) => {
+  const pill = document.createElement('div');
+  pill.className = 'pill';
+  pill.style.color = color;
+  pill.style.borderColor = color + '60';
+  pill.innerHTML = `<span class="pdot" style="background:${color}"></span>${NAMES[i]}`;
+  pill.addEventListener('click', () => {
+    if (activePhase === i) {
+      activePhase = null;
+      pill.style.cssText = `color:${color};border-color:${color}60;background:`;
+      applyFilter(null);
+    } else {
+      if (activePhase !== null) {
+        const op = pillsEl.children[activePhase];
+        op.style.background = ''; op.style.color = COLORS[activePhase]; op.style.borderColor = COLORS[activePhase]+'60';
+        if(nodeEls[DATA[activePhase].code]) nodeEls[DATA[activePhase].code].classList.remove('selected');
+      }
+      activePhase = i;
+      pill.style.background = color; pill.style.color = '#fff'; pill.style.borderColor = color;
+      applyFilter(i);
+    }
+  });
+  pillsEl.appendChild(pill);
+});
+
+/* ═══════════════════════════════════════════════════
+   DRAG — phase drags whole group
+═══════════════════════════════════════════════════ */
+let hasDragged = false;
+
+function enableDrag(code, extra=[]) {
+  const el = nodeEls[code];
+  if(!el) return;
+  let dragging=false, sx0=0, sy0=0;
+  const snap = {};
+  el.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    dragging = true; hasDragged = false;
+    el.setPointerCapture(e.pointerId);
+    el.style.cursor = 'grabbing';
+    sx0 = e.clientX; sy0 = e.clientY;
+    [code, ...extra].forEach(c => { snap[c] = {...pos[c]}; });
+    el.style.zIndex = 300;
+  });
+  el.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - sx0, dy = e.clientY - sy0;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasDragged = true;
+    const wdx = dx/vpS, wdy = dy/vpS;
+    [code, ...extra].forEach(c => {
+      pos[c].x = snap[c].x + wdx;
+      pos[c].y = snap[c].y + wdy;
+    });
+    render();
+  });
+  el.addEventListener('pointerup', () => {
+    dragging = false; el.style.cursor = 'grab'; el.style.zIndex = '';
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   PAN + ZOOM
+═══════════════════════════════════════════════════ */
+let panning=false, psx=0, psy=0, pvx=0, pvy=0;
+stage.addEventListener('pointerdown', e => {
+  if(e.target !== stage && e.target !== svgEl) return;
+  panning=true; stage.setPointerCapture(e.pointerId);
+  psx=e.clientX; psy=e.clientY; pvx=vpX; pvy=vpY;
+  stage.classList.add('grabbing');
+});
+stage.addEventListener('pointermove', e => {
+  if(!panning) return;
+  vpX = pvx + (e.clientX-psx); vpY = pvy + (e.clientY-psy); render();
+});
+stage.addEventListener('pointerup', () => { panning=false; stage.classList.remove('grabbing'); });
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  const mx=e.clientX, my=e.clientY-58;
+  const f = e.deltaY<0 ? 1.1 : 0.91;
+  const ns = Math.min(2.8, Math.max(0.2, vpS*f));
+  vpX = mx - (mx-vpX)*(ns/vpS);
+  vpY = my - (my-vpY)*(ns/vpS);
+  vpS = ns; render();
+}, {passive:false});
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+initPositions();
+buildDOM();
+
+// Phase nodes: click to filter, drag moves whole group
+DATA.forEach((ph, pi) => {
+  enableDrag(ph.code, phaseChildren[ph.code]);
+  nodeEls[ph.code].addEventListener('click', e => {
+    if (hasDragged) return;
+    const pill = pillsEl.children[pi];
+    if (activePhase === pi) {
+      activePhase = null;
+      pill.style.background=''; pill.style.color=COLORS[pi]; pill.style.borderColor=COLORS[pi]+'60';
+      applyFilter(null);
+    } else {
+      if (activePhase !== null) {
+        const op = pillsEl.children[activePhase];
+        op.style.background=''; op.style.color=COLORS[activePhase]; op.style.borderColor=COLORS[activePhase]+'60';
+      }
+      activePhase = pi;
+      pill.style.background=COLORS[pi]; pill.style.color='#fff'; pill.style.borderColor=COLORS[pi];
+      applyFilter(pi);
+    }
+  });
+});
+
+enableDrag('center');
+DATA.forEach(ph => {
+  ph.subs.forEach(sub => {
+    enableDrag(sub.code, sub.leaves.map(l=>l.code));
+    sub.leaves.forEach(lf => enableDrag(lf.code));
+  });
+});
+
+// Auto-fit: find real bounding box and center it perfectly
+const pad = 100;
+const allX = Object.values(pos).map(p=>p.x);
+const allY = Object.values(pos).map(p=>p.y);
+const bMinX = Math.min(...allX)-pad, bMaxX = Math.max(...allX)+pad;
+const bMinY = Math.min(...allY)-pad, bMaxY = Math.max(...allY)+pad;
+const bW = bMaxX-bMinX, bH = bMaxY-bMinY;
+const bCX = (bMinX+bMaxX)/2, bCY = (bMinY+bMaxY)/2;
+vpS = Math.min(SW/bW, SH/bH) * 0.88;
+vpX = SW/2 - bCX*vpS;
+vpY = SH/2 - bCY*vpS;
+render();
+</script>
+</body>
+</html>
